@@ -1,4 +1,4 @@
-package com.badal.test;
+package com.badal.mapreduce.samples;
 
 import java.io.IOException;
 
