@@ -1,8 +1,6 @@
 package com.badal.mapreduce.samples;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -17,18 +15,18 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 /**
  * Distinct pattern: This MapReduce program outputs distinct ticker symbol from stock data csv file. Mapper output key
- * is NullWritable object and value is ticker symbol. Reducer output key is NullWritable object and value is distinct
- * ticker symbol.
+ * is ticker symbol and value is NullWritable object. Reducer output key is distinct ticker symbol and value is
+ * NullWritable object.
  * 
  * @author badal
  *
  */
 public class DistinctStockMapReduce
 {
-    public static class DistinctStockMapReduceMapper extends Mapper<Object, Text, NullWritable, Text>
+    public static class DistinctStockMapReduceMapper extends Mapper<Object, Text, Text, NullWritable>
     {
         @Override
-        protected void map(Object key, Text value, Mapper<Object, Text, NullWritable, Text>.Context context)
+        protected void map(Object key, Text value, Mapper<Object, Text, Text, NullWritable>.Context context)
                 throws IOException, InterruptedException
         {
             String[] stockData = value.toString().split(",");
@@ -39,30 +37,20 @@ public class DistinctStockMapReduce
                 return;
             }
 
-            context.write(NullWritable.get(), new Text(ticker));
+            context.write(new Text(ticker), NullWritable.get());
         }
 
     }
 
-    public static class DistinctStockMapReduceReducer extends Reducer<NullWritable, Text, NullWritable, Text>
+    public static class DistinctStockMapReduceReducer extends Reducer<Text, NullWritable, Text, NullWritable>
     {
         @Override
-        protected void reduce(NullWritable key, Iterable<Text> values,
-                Reducer<NullWritable, Text, NullWritable, Text>.Context context) throws IOException,
+        protected void reduce(Text key, Iterable<NullWritable> values,
+                Reducer<Text, NullWritable, Text, NullWritable>.Context context) throws IOException,
                 InterruptedException
         {
-            Set<String> distinctValues = new HashSet<String>();
 
-            for (Text value : values)
-            {
-                distinctValues.add(value.toString());
-
-            }
-
-            for (String distinctVal : distinctValues)
-            {
-                context.write(NullWritable.get(), new Text(distinctVal));
-            }
+            context.write(key, NullWritable.get());
 
         }
 
@@ -77,10 +65,10 @@ public class DistinctStockMapReduce
         job.setMapperClass(DistinctStockMapReduceMapper.class);
         job.setReducerClass(DistinctStockMapReduceReducer.class);
 
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(Text.class);
-        job.setOutputKeyClass(NullWritable.class);
-        job.setOutputValueClass(Text.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(NullWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(NullWritable.class);
 
         FileInputFormat.setInputPaths(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
